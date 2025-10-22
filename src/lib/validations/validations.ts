@@ -1,3 +1,4 @@
+import { NominatimLocation } from "./../types/types";
 import z from "zod";
 //for image
 export const tripImageSchema = z
@@ -25,7 +26,13 @@ export const newTripFormSchema = z
     path: ["endDate"], // attach error to endDate field
   });
 
+export const NominatimLocationSchema = z.object({
+  display_name: z.string(),
+  lat: z.string(),
+  lon: z.string(),
+});
+
 export const newLocationFormSchema = z.object({
   location: z.string().min(1, "Location is required"),
-  address: z.string().min(1, "Address is required"),
+  address: NominatimLocationSchema.shape.display_name.nullable(), // can be null if not set yet
 });

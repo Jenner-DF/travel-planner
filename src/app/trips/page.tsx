@@ -1,29 +1,45 @@
+"use client";
 import TripCard from "@/components/custom/TripCard";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
-import { getUserTrips } from "@/lib/actions/actions";
+import { getUser, getUserTrips } from "@/lib/actions/actions";
 import { createClient } from "@/utils/supabase/server";
 import Link from "next/link";
-import { Plane, MapPin, CalendarDays } from "lucide-react";
+import { Plane, MapPin, CalendarDays, Loader2, Trash2 } from "lucide-react";
+import { useQuery } from "@tanstack/react-query";
+import { redirect } from "next/navigation";
+import { useDeleteTrip } from "@/lib/actions/hooks";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog";
 
-export default async function TripsPage() {
-  const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
+export default function TripsPage() {
+  const { data: trips = [], isPending } = useQuery({
+    queryKey: ["trips"],
+    queryFn: async () => {
+      const trips = await getUserTrips();
+      return trips ?? []; // ✅ ensures it never returns null/undefined
+    },
+  });
+  const { data: user, isPending: isPendingUser } = useQuery({
+    queryKey: ["user"],
+    queryFn: async () => {
+      return await getUser();
+    },
+  });
 
-  if (!user) {
-    return (
-      <div className="flex flex-col items-center justify-center min-h-[60vh] text-center space-y-3">
-        <h1 className="text-xl font-semibold text-foreground">Not logged in</h1>
-        <p className="text-sm text-muted-foreground">
-          Please log in to access your trips.
-        </p>
-      </div>
-    );
+  if (isPending || isPendingUser) {
+    return <div>Loading your trips...</div>;
   }
-
-  const trips = await getUserTrips(user.id);
+  if (!user) redirect("/login");
 
   if (!trips || trips.length === 0) {
     return (
@@ -109,6 +125,7 @@ export default async function TripsPage() {
         <h2 className="text-xl font-semibold text-neutral-900 mb-4">
           Your Trips
         </h2>
+
         <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
           {trips.map((trip) => (
             <div

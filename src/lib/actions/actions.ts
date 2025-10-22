@@ -4,6 +4,7 @@ import { Location } from "./../../generated/prisma/index.d";
 import { newTripFormSchema } from "@/lib/validations/validations";
 import prisma from "../prisma";
 import { createClient } from "@/utils/supabase/server";
+import { NewLocationData } from "../types/types";
 
 export async function createTrip(data: unknown) {
   // validate again on server (never trust client input)
@@ -50,10 +51,21 @@ export async function createTrip(data: unknown) {
   });
   return trip; // return the created trip for debugging
 }
+export async function getUser() {
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  return user;
+}
 
-export async function getUserTrips(userId: string) {
+export async function getUserTrips() {
+  const supabase = await createClient();
+  const user = await supabase.auth.getUser();
+  if (user.data.user == null) return null;
+
   const trips = await prisma.trip.findMany({
-    where: { userId },
+    where: { userId: user.data.user.id },
     orderBy: { createdAt: "desc" },
     include: { locations: true },
   });
@@ -68,12 +80,8 @@ export async function getUserTripWithLocations(tripId: string) {
   return trip;
 }
 
-export async function addTripLocation(
-  tripId: string,
-  locationTitle: string,
-  address: string,
-  coords: [number, number]
-) {
+export async function addTripLocation(newLocationData: NewLocationData) {
+  const { tripId, address, locationTitle, coords } = newLocationData;
   const supabase = await createClient();
   const user = await supabase.auth.getUser();
   if (user.data.user == null) return null;
@@ -106,6 +114,14 @@ export async function reorderLocations(newLocationsOrder: Location[]) {
       })
     )
   );
+}
+export async function deleteTrip(tripId: string) {
+  const supabase = await createClient();
+  const user = await supabase.auth.getUser();
+  if (user.data.user == null) return null;
+  await prisma.trip.delete({
+    where: { id: tripId },
+  });
 }
 export async function deleteLocation(locationId: string) {
   console.log(`Deleting location with id: ${locationId}`);

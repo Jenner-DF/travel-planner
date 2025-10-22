@@ -15,23 +15,21 @@ import { NominatimLocation } from "@/lib/types/types";
 
 export default function GlobeMap({
   location,
-  setAddress,
+  setLocation,
 }: {
   location: NominatimLocation | null;
-  setAddress: React.Dispatch<React.SetStateAction<string | null>>;
+  setLocation: React.Dispatch<React.SetStateAction<NominatimLocation | null>>;
 }) {
   const [currentPosition, setCurrentPosition] = useState<
     [number, number] | null
   >(null);
-
   // ✅ Update position when searched location changes
   useEffect(() => {
     if (location) {
       setCurrentPosition([parseFloat(location.lat), parseFloat(location.lon)]);
-
-      setAddress(location.display_name || null);
+      setLocation(location);
     }
-  }, [location, setAddress]);
+  }, [location, setLocation]);
 
   // ✅ Get user's location only once
   useEffect(() => {
@@ -64,7 +62,7 @@ export default function GlobeMap({
       {/* 🟢 Handle map clicks to move marker and fetch address */}
       <MoveMarkerOnClick
         setCurrentPosition={setCurrentPosition}
-        setAddress={setAddress}
+        setLocation={setLocation}
       />
 
       {/* 🟠 Show marker */}
@@ -96,12 +94,12 @@ function ChangeView({ center }: { center: [number, number] }) {
 // 👇 Move marker + debounce reverse geocoding when user clicks
 function MoveMarkerOnClick({
   setCurrentPosition,
-  setAddress,
+  setLocation,
 }: {
   setCurrentPosition: React.Dispatch<
     React.SetStateAction<[number, number] | null>
   >;
-  setAddress: React.Dispatch<React.SetStateAction<string | null>>;
+  setLocation: React.Dispatch<React.SetStateAction<NominatimLocation | null>>;
 }) {
   const debounceRef = useRef<NodeJS.Timeout | null>(null);
 
@@ -112,7 +110,6 @@ function MoveMarkerOnClick({
 
       // Immediately move marker
       setCurrentPosition([lat, lon]);
-      setAddress("Loading address...");
 
       // 🕒 Debounce reverse geocoding
       if (debounceRef.current) clearTimeout(debounceRef.current);
@@ -121,11 +118,11 @@ function MoveMarkerOnClick({
         try {
           const res = await fetch(`/api/reverseSearch?lat=${lat}&lon=${lon}`);
           const data = await res.json();
-          setAddress(data.display_name || "Unknown location");
+          setLocation(data);
           console.log("Reverse geocoded:", data.display_name);
         } catch (err) {
           console.error("Failed to reverse geocode:", err);
-          setAddress("Error fetching address");
+          setLocation(null);
         }
       }, 600); // adjust debounce delay (ms)
     },

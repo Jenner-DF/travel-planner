@@ -32,7 +32,7 @@ model Location {
   lat  Float
   long Float
   address String
-  trip Trip @relation(fields: [tripId], references: [id])
+  trip Trip @relation(fields: [tripId], references: [id] ,onDelete: Cascade)
   tripId String
   order Int @default(0)
   createdAt DateTime @default(now())

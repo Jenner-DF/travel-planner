@@ -20,3 +20,10 @@ export interface NominatimLocation {
 export interface TripWithLocations extends Trip {
   locations: Location[];
 }
+
+export type NewLocationData = {
+  tripId: string;
+  locationTitle: string;
+  address: string;
+  coords: [number, number];
+};

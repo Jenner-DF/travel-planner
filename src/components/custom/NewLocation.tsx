@@ -11,10 +11,11 @@ import { Button } from "../ui/button";
 
 import dynamic from "next/dynamic";
 import { useEffect, useState } from "react";
-import { NominatimLocation } from "@/lib/types/types";
-import { addTripLocation } from "@/lib/actions/actions";
+import { NewLocationData, NominatimLocation } from "@/lib/types/types";
 import { toast } from "sonner";
 import { redirect } from "next/navigation";
+import { Textarea } from "../ui/textarea";
+import { useAddLocation } from "@/lib/actions/hooks";
 
 const TestMap = dynamic(() => import("@/components/custom/TestMap"), {
   ssr: false, // 👈 VERY IMPORTANT
@@ -22,14 +23,16 @@ const TestMap = dynamic(() => import("@/components/custom/TestMap"), {
 
 export default function NewLocationClient({ tripid }: { tripid: string }) {
   const [location, setLocation] = useState<NominatimLocation | null>(null);
-  const [address, setAddress] = useState<string | null>(null);
+  // const [address, setAddress] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
+  const { mutate: addLocation, isPending: isPendingAddLocation } =
+    useAddLocation(tripid);
   console.log(location);
   const form = useForm<z.infer<typeof newLocationFormSchema>>({
     resolver: zodResolver(newLocationFormSchema),
     defaultValues: {
       location: "",
-      address: address || "",
+      address: "",
     },
     mode: "onSubmit",
   });
@@ -40,13 +43,6 @@ export default function NewLocationClient({ tripid }: { tripid: string }) {
     }
   }, [location, form]);
 
-  // Update form when address changes (map click)
-  useEffect(() => {
-    if (address) {
-      form.setValue("address", address);
-    }
-  }, [address, form]);
-
   const handleSubmit = async (
     formData: z.infer<typeof newLocationFormSchema>
   ) => {
@@ -54,14 +50,23 @@ export default function NewLocationClient({ tripid }: { tripid: string }) {
 
     try {
       if (!location) {
-        toast.error("Please select a location first");
-        return; // exits early if no location
+        toast.error("Please add a Title for the location");
+        return;
       }
-
-      await addTripLocation(tripid, formData.location, formData.address, [
-        parseFloat(location.lat),
-        parseFloat(location.lon),
-      ]);
+      if (!formData.address) {
+        toast.error("No location address found, please search again");
+        return;
+      }
+      const newLocationData: NewLocationData = {
+        tripId: tripid,
+        locationTitle: formData.location,
+        address: formData.address,
+        coords: [parseFloat(location.lat), parseFloat(location.lon)] as [
+          number,
+          number
+        ],
+      };
+      addLocation(newLocationData);
 
       toast.success("Location added successfully!");
     } catch (error) {
@@ -154,11 +159,12 @@ export default function NewLocationClient({ tripid }: { tripid: string }) {
                   render={({ field }) => (
                     <FormItem className="flex-1">
                       <FormControl>
-                        <textarea
+                        <Textarea
                           {...field}
                           placeholder="Enter location address"
                           disabled
                           className="w-full min-h-[80px] rounded-md border border-input bg-background px-3 py-2 text-sm text-muted-foreground resize-none"
+                          value={field.value || ""}
                         />
                       </FormControl>
                     </FormItem>
@@ -180,7 +186,7 @@ export default function NewLocationClient({ tripid }: { tripid: string }) {
       </Card>
       <Card className="w-full max-w-6xl mx-auto h-[400px] lg:h-[600px] p-0">
         <CardContent className="p-0 h-full">
-          <TestMap location={location} setAddress={setAddress} />
+          <TestMap location={location} setLocation={setLocation} />
         </CardContent>
       </Card>
     </div>

@@ -1,16 +1,17 @@
-"use client";
-import GlobeMap from "@/components/custom/TestMap";
-
-import dynamic from "next/dynamic";
-
-const TestMap = dynamic(() => import("@/components/custom/TestMap"), {
-  ssr: false, // 👈 VERY IMPORTANT
-});
+import GlobeUi from "@/components/custom/GlobeUi";
+import Link from "next/link";
 
 export default function GlobePage() {
   return (
-    <div className="h-screen w-full border-2 border-red-500 ">
-      <TestMap />
+    <div className="min-h-dvh w-full bg-white text-black">
+      <div className="max-w-7xl mx-auto px-6 py-10">
+        <h1 className="text-center text-4xl font-bold mb-12">
+          Your Travel Journey
+        </h1>
+
+        {/* Responsive grid layout */}
+        <GlobeUi />
+      </div>
     </div>
   );
 }

@@ -1,10 +1,29 @@
+"use client";
+
 import { Trip } from "@/generated/prisma";
 import Image from "next/image";
 import Link from "next/link";
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
-import { CalendarDays } from "lucide-react";
+import { CalendarDays, Trash2 } from "lucide-react";
+import { useDeleteTrip } from "@/lib/actions/hooks";
+import { Button } from "@/components/ui/button";
+import { toast } from "sonner";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog";
 
 export default function TripCard({ trip }: { trip: Trip }) {
+  const { mutate: deleteTrip, isPending: isPendingDeleteTrip } =
+    useDeleteTrip();
+
   const start = new Date(trip.startDate).toLocaleDateString("en-US", {
     month: "short",
     day: "numeric",
@@ -14,9 +33,52 @@ export default function TripCard({ trip }: { trip: Trip }) {
     day: "numeric",
   });
 
+  const handleDelete = () => {
+    deleteTrip(trip.id, {
+      onSuccess: () => toast.success("Trip deleted successfully!"),
+      onError: () => toast.error("Failed to delete trip."),
+    });
+  };
+
   return (
-    <Link href={`/trips/${trip.id}`} className="block group">
-      <Card className="overflow-hidden hover:shadow-lg transition-shadow duration-200">
+    <Card className="overflow-hidden hover:shadow-lg transition-shadow duration-200 relative group py-0">
+      {/* 🗑️ Delete Button */}
+      <div className="absolute top-3 right-3 z-20">
+        <AlertDialog>
+          <AlertDialogTrigger asChild>
+            <Button
+              variant="destructive"
+              size="icon"
+              className="opacity-0 group-hover:opacity-100 transition-opacity cursor-pointer"
+              disabled={isPendingDeleteTrip}
+            >
+              <Trash2 size={16} />
+            </Button>
+          </AlertDialogTrigger>
+
+          <AlertDialogContent>
+            <AlertDialogHeader>
+              <AlertDialogTitle>Delete this trip?</AlertDialogTitle>
+              <AlertDialogDescription>
+                This action cannot be undone. All locations under this trip will
+                also be permanently removed.
+              </AlertDialogDescription>
+            </AlertDialogHeader>
+            <AlertDialogFooter>
+              <AlertDialogCancel>Cancel</AlertDialogCancel>
+              <AlertDialogAction
+                onClick={handleDelete}
+                className="bg-red-600 hover:bg-red-700 text-white"
+              >
+                Delete
+              </AlertDialogAction>
+            </AlertDialogFooter>
+          </AlertDialogContent>
+        </AlertDialog>
+      </div>
+
+      {/* 👇 Make only this area clickable */}
+      <Link href={`/trips/${trip.id}`} className="block">
         <div className="relative aspect-[16/9] w-full">
           <Image
             src={trip.imageUrl}
@@ -39,7 +101,7 @@ export default function TripCard({ trip }: { trip: Trip }) {
             </span>
           </div>
         </CardContent>
-      </Card>
-    </Link>
+      </Link>
+    </Card>
   );
 }

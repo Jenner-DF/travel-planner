@@ -12,78 +12,93 @@ import {
   SheetTrigger,
 } from "@/components/ui/sheet";
 import { Globe, LogInIcon, Menu, Plane } from "lucide-react";
-import { createClient } from "@/utils/supabase/client";
-import { useEffect, useState } from "react";
 import { signOut } from "@/app/auth/login/actions";
+import { useQuery } from "@tanstack/react-query";
+import { getUser } from "@/lib/actions/actions";
 
 export default function Navbar() {
-  const supabase = createClient();
-  const [user, setUser] = useState<unknown>(null);
+  const { data: user } = useQuery({
+    queryKey: ["user"],
+    queryFn: getUser,
+  });
 
-  useEffect(() => {
-    // get user on mount
-    supabase.auth.getUser().then(({ data }) => {
-      setUser(data.user);
-    });
-
-    // subscribe to login/logout events
-    const {
-      data: { subscription },
-    } = supabase.auth.onAuthStateChange((_event, session) => {
-      setUser(session?.user ?? null);
-    });
-
-    return () => {
-      subscription.unsubscribe();
-    };
-  }, [supabase]);
-  console.log(user);
   return (
-    <nav className="w-full border-b bg-white shadow-sm">
+    <nav className="w-full border-b border-neutral-200 bg-white/80 backdrop-blur-sm">
       <div className="max-w-6xl mx-auto px-4 py-3 flex items-center justify-between">
-        {/* Left: Logo + Title */}
+        {/* === Logo + Brand === */}
         <Link href="/" className="flex items-center gap-2">
-          <Image src="/logo.png" alt="logo" width={40} height={40} />
-          <span className="text-xl font-bold tracking-tight">
+          <Image
+            src="/logo.png"
+            alt="Travel Planner Logo"
+            width={36}
+            height={36}
+            className="rounded-md"
+          />
+          <span className="text-lg font-semibold tracking-tight text-neutral-900">
             Travel Planner
           </span>
         </Link>
 
-        {/* Right: Desktop Links */}
+        {/* === Desktop Nav === */}
         <div className="hidden md:flex items-center gap-6">
-          <Link href="/trips" className="font-medium hover:text-primary">
+          <Link
+            href="/trips"
+            className="text-sm font-medium text-neutral-800 hover:text-neutral-500 transition-colors"
+          >
             {user
-              ? `${user.user_metadata.full_name.split(" ")[0]}'s trips `
+              ? `${user.user_metadata.full_name?.split(" ")[0]}'s Trips`
               : "My Trips"}
           </Link>
-          <Link href="/globe" className="font-medium hover:text-primary">
+
+          <Link
+            href="/globe"
+            className="text-sm font-medium text-neutral-800 hover:text-neutral-500 transition-colors"
+          >
             Globe
           </Link>
-          <Button asChild>
-            {user ? (
-              <Button onClick={async () => await signOut()}>Sign out</Button>
-            ) : (
-              <Link href="/auth/login">Login</Link>
-            )}
-          </Button>
+
+          {user ? (
+            <Button
+              variant="outline"
+              onClick={async () => await signOut()}
+              className="border-neutral-400 text-neutral-800 hover:bg-neutral-900 hover:text-white"
+            >
+              Sign Out
+            </Button>
+          ) : (
+            <Link href="/auth/login">
+              <Button
+                variant="outline"
+                className="border-neutral-400 text-neutral-800 hover:bg-neutral-900 hover:text-white"
+              >
+                Login
+              </Button>
+            </Link>
+          )}
         </div>
 
-        {/* Mobile Menu */}
+        {/* === Mobile Nav === */}
         <div className="md:hidden">
           <Sheet>
             <SheetTrigger asChild>
-              <Button variant="ghost" size="lg">
-                <Menu />
+              <Button variant="ghost" size="icon">
+                <Menu className="h-5 w-5" />
               </Button>
             </SheetTrigger>
-            <SheetContent side="right" className="w-64">
+            <SheetContent
+              side="right"
+              className="w-64 border-l border-neutral-200"
+            >
               <SheetHeader>
-                <SheetTitle>Menu</SheetTitle>
+                <SheetTitle className="text-lg font-semibold text-neutral-900">
+                  Menu
+                </SheetTitle>
               </SheetHeader>
-              <div className="mt-6 flex flex-col gap-4 px-4">
+
+              <div className="mt-6 flex flex-col gap-4">
                 <Link
                   href="/trips"
-                  className="flex items-center gap-2 font-medium hover:text-primary"
+                  className="flex items-center gap-2 text-neutral-800 hover:text-neutral-500 transition-colors"
                 >
                   <Plane className="h-4 w-4" />
                   My Trips
@@ -91,7 +106,7 @@ export default function Navbar() {
 
                 <Link
                   href="/globe"
-                  className="flex items-center gap-2 font-medium hover:text-primary"
+                  className="flex items-center gap-2 text-neutral-800 hover:text-neutral-500 transition-colors"
                 >
                   <Globe className="h-4 w-4" />
                   Globe
@@ -99,13 +114,22 @@ export default function Navbar() {
 
                 <SheetClose asChild>
                   {user ? (
-                    <Button onClick={async () => await signOut()}>
-                      Sign out
+                    <Button
+                      variant="outline"
+                      onClick={async () => await signOut()}
+                      className="border-neutral-400 text-neutral-800 hover:bg-neutral-900 hover:text-white"
+                    >
+                      Sign Out
                     </Button>
                   ) : (
-                    <Button>
-                      <Link href="/auth/login">Login</Link>
-                    </Button>
+                    <Link href="/auth/login">
+                      <Button
+                        variant="outline"
+                        className="border-neutral-400 text-neutral-800 hover:bg-neutral-900 hover:text-white"
+                      >
+                        Login
+                      </Button>
+                    </Link>
                   )}
                 </SheetClose>
               </div>

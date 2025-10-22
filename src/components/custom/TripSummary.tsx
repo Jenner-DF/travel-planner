@@ -1,6 +1,7 @@
 import { getUserTrips } from "@/lib/actions/actions";
 import { useQuery } from "@tanstack/react-query";
 import Link from "next/link";
+import { Button } from "../ui/button";
 
 export default function TripSummary() {
   const { data: allTrips = [], isPending } = useQuery({
@@ -22,11 +23,9 @@ export default function TripSummary() {
         <p className="text-muted-foreground text-sm">
           Start planning your next journey.
         </p>
-        <Link href="/trips/new">
-          <button className="w-full border border-black rounded-xl py-3 text-sm font-medium hover:bg-black hover:text-white transition-colors">
-            + Create New Trip
-          </button>
-        </Link>
+        <Button className=" border border-black rounded-xl py-3 text-sm font-medium hover:bg-black hover:text-white transition-colors">
+          <Link href="/trips/new">Create New Trip</Link>
+        </Button>
       </div>
     );
   }

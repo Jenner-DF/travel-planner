@@ -3,23 +3,10 @@ import TripCard from "@/components/custom/TripCard";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { getUser, getUserTrips } from "@/lib/actions/actions";
-import { createClient } from "@/utils/supabase/server";
 import Link from "next/link";
 import { Plane, MapPin, CalendarDays, Loader2, Trash2 } from "lucide-react";
 import { useQuery } from "@tanstack/react-query";
 import { redirect } from "next/navigation";
-import { useDeleteTrip } from "@/lib/actions/hooks";
-import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-  AlertDialogTrigger,
-} from "@/components/ui/alert-dialog";
 
 export default function TripsPage() {
   const { data: trips = [], isPending } = useQuery({

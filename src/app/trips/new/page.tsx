@@ -19,7 +19,7 @@ import {
   Popover,
   PopoverContent,
   PopoverTrigger,
-} from "@radix-ui/react-popover";
+} from "@/components/ui/popover"; // ✅ Correct ShadCN import
 import { cn } from "@/lib/utils";
 import { addDays, format } from "date-fns";
 import { CalendarIcon } from "lucide-react";
@@ -33,6 +33,7 @@ import { useRouter } from "next/navigation";
 export default function NewTripPage() {
   const router = useRouter();
   const [isLoading, setIsLoading] = useState(false);
+
   const form = useForm<z.infer<typeof newTripFormSchema>>({
     resolver: zodResolver(newTripFormSchema),
     defaultValues: {
@@ -69,20 +70,19 @@ export default function NewTripPage() {
   };
 
   return (
-    <div className="max-w-md mx-auto p-4 sm:p-6">
-      <Card className="shadow-lg border border-gray-200">
+    <div className="min-h-screen bg-white text-black flex items-center justify-center p-6">
+      <Card className="w-full max-w-lg border border-gray-200 shadow-md rounded-2xl bg-white">
         <CardHeader>
-          <CardTitle className="text-xl sm:text-2xl font-semibold">
+          <CardTitle className="text-2xl font-semibold text-center tracking-tight">
             Create a New Trip
           </CardTitle>
         </CardHeader>
+
         <CardContent>
           <Form {...form}>
             <form
-              onSubmit={form.handleSubmit(handleSubmit, (errors) => {
-                console.log("Validation errors:", errors);
-              })}
-              className="space-y-4"
+              onSubmit={form.handleSubmit(handleSubmit)}
+              className="space-y-6"
             >
               {/* Trip Name */}
               <FormField
@@ -90,9 +90,13 @@ export default function NewTripPage() {
                 control={form.control}
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Trip Name</FormLabel>
+                    <FormLabel className="text-gray-700">Trip Name</FormLabel>
                     <FormControl>
-                      <Input placeholder="Enter trip name" {...field} />
+                      <Input
+                        placeholder="Enter trip name"
+                        className="border-gray-300 focus:border-black focus:ring-black"
+                        {...field}
+                      />
                     </FormControl>
                     <FormMessage />
                   </FormItem>
@@ -105,11 +109,12 @@ export default function NewTripPage() {
                 name="description"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Description</FormLabel>
+                    <FormLabel className="text-gray-700">Description</FormLabel>
                     <FormControl>
                       <Textarea
-                        placeholder="Enter trip description"
+                        placeholder="Describe your trip..."
                         rows={4}
+                        className="border-gray-300 focus:border-black focus:ring-black"
                         {...field}
                       />
                     </FormControl>
@@ -124,15 +129,15 @@ export default function NewTripPage() {
                 name="startDate"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Start Date</FormLabel>
+                    <FormLabel className="text-gray-700">Start Date</FormLabel>
                     <Popover>
                       <PopoverTrigger asChild>
                         <FormControl>
                           <Button
                             variant="outline"
                             className={cn(
-                              "w-full sm:w-[240px] justify-between",
-                              !field.value && "text-muted-foreground"
+                              "w-full justify-between border-gray-300 hover:border-black hover:bg-gray-50 text-gray-800",
+                              !field.value && "text-gray-400"
                             )}
                           >
                             {field.value
@@ -142,7 +147,10 @@ export default function NewTripPage() {
                           </Button>
                         </FormControl>
                       </PopoverTrigger>
-                      <PopoverContent className="w-auto p-0" align="start">
+                      <PopoverContent
+                        className="w-auto p-0 z-50 bg-white border border-gray-200 shadow-lg rounded-md"
+                        align="start"
+                      >
                         <Calendar
                           mode="single"
                           selected={field.value}
@@ -165,15 +173,15 @@ export default function NewTripPage() {
                   const startDate = form.watch("startDate");
                   return (
                     <FormItem>
-                      <FormLabel>End Date</FormLabel>
+                      <FormLabel className="text-gray-700">End Date</FormLabel>
                       <Popover>
                         <PopoverTrigger asChild>
                           <FormControl>
                             <Button
                               variant="outline"
                               className={cn(
-                                "w-full sm:w-[240px] justify-between",
-                                !field.value && "text-muted-foreground"
+                                "w-full justify-between border-gray-300 hover:border-black hover:bg-gray-50 text-gray-800",
+                                !field.value && "text-gray-400"
                               )}
                             >
                               {field.value
@@ -183,7 +191,10 @@ export default function NewTripPage() {
                             </Button>
                           </FormControl>
                         </PopoverTrigger>
-                        <PopoverContent className="w-auto p-0" align="start">
+                        <PopoverContent
+                          className="w-auto p-0 z-50 bg-white border border-gray-200 shadow-lg rounded-md"
+                          align="start"
+                        >
                           <Calendar
                             mode="single"
                             selected={field.value}
@@ -209,21 +220,22 @@ export default function NewTripPage() {
                 name="imageUrl"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Upload Image</FormLabel>
+                    <FormLabel className="text-gray-700">Trip Image</FormLabel>
                     <FormControl>
                       <Input
                         type="file"
                         accept="image/*"
                         onChange={(e) => field.onChange(e.target.files?.[0])}
+                        className="border-gray-300 focus:border-black focus:ring-black cursor-pointer"
                       />
                     </FormControl>
 
                     {field.value && (
-                      <div className="mt-2 flex justify-center">
+                      <div className="mt-3 flex justify-center">
                         <img
                           src={URL.createObjectURL(field.value)}
                           alt="Preview"
-                          className="h-32 w-full object-contain rounded-md border"
+                          className="h-32 w-full object-cover rounded-md border border-gray-200"
                         />
                       </div>
                     )}
@@ -233,8 +245,12 @@ export default function NewTripPage() {
               />
 
               {/* Submit */}
-              <Button type="submit" className="w-full" disabled={isLoading}>
-                {isLoading ? "Creating your trip..." : "Create Trip"}
+              <Button
+                type="submit"
+                className="w-full bg-black text-white hover:bg-gray-900"
+                disabled={isLoading}
+              >
+                {isLoading ? "Creating..." : "Create Trip"}
               </Button>
             </form>
           </Form>

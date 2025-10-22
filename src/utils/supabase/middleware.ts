@@ -15,7 +15,7 @@ export async function updateSession(request: NextRequest) {
           return request.cookies.getAll();
         },
         setAll(cookiesToSet) {
-          cookiesToSet.forEach(({ name, value, options }) =>
+          cookiesToSet.forEach(({ name, value }) =>
             request.cookies.set(name, value)
           );
           supabaseResponse = NextResponse.next({
@@ -38,6 +38,11 @@ export async function updateSession(request: NextRequest) {
   const {
     data: { user },
   } = await supabase.auth.getUser();
+
+  // 🧭 Allow access to landing page and public routes
+  const isPublicRoute = request.nextUrl.pathname === "/";
+
+  if (isPublicRoute) return NextResponse.next();
 
   if (request.nextUrl.pathname === "/auth") {
     const url = request.nextUrl.clone();

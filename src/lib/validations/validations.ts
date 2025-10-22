@@ -1,4 +1,3 @@
-import { NominatimLocation } from "./../types/types";
 import z from "zod";
 //for image
 export const tripImageSchema = z

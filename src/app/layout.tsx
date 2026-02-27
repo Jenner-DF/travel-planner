@@ -1,4 +1,6 @@
 import type { Metadata } from "next";
+import { StackProvider, StackTheme } from "@stackframe/stack";
+import { stackClientApp } from "../stack/client";
 import { Plus_Jakarta_Sans } from "next/font/google";
 import "./globals.css";
 import QueryProvider from "@/providers/QueryProvider";
@@ -22,13 +24,13 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en">
-      <body className={`${plusJakartaSans.variable} antialiased`}>
+      <body className={`${plusJakartaSans.variable} antialiased`}><StackProvider app={stackClientApp}><StackTheme>
         <QueryProvider>
           <Toaster position="top-center" />
           <Navbar />
           {children}
         </QueryProvider>
-      </body>
+      </StackTheme></StackProvider></body>
     </html>
   );
 }

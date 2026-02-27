@@ -6,6 +6,9 @@ import "./globals.css";
 import QueryProvider from "@/providers/QueryProvider";
 import Navbar from "@/components/custom/Navbar";
 import { Toaster } from "@/components/ui/sonner";
+import { Suspense } from "react";
+import Loading from "./loading";
+import NavbarSkeleton from "@/components/custom/NavBarSkeleton";
 
 const plusJakartaSans = Plus_Jakarta_Sans({
   subsets: ["latin"],
@@ -24,13 +27,19 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en">
-      <body className={`${plusJakartaSans.variable} antialiased`}><StackProvider app={stackClientApp}><StackTheme>
+      <body className={`${plusJakartaSans.variable} antialiased`}>
         <QueryProvider>
-          <Toaster position="top-center" />
-          <Navbar />
-          {children}
+          <StackProvider app={stackClientApp}>
+            <StackTheme>
+              <Toaster position="top-center" />
+              <Suspense fallback={<NavbarSkeleton />}>
+                <Navbar />
+              </Suspense>
+              {children}
+            </StackTheme>
+          </StackProvider>
         </QueryProvider>
-      </StackTheme></StackProvider></body>
+      </body>
     </html>
   );
 }

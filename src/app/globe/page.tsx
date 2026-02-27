@@ -1,5 +1,4 @@
 import GlobeUi from "@/components/custom/GlobeUi";
-import Link from "next/link";
 
 export default function GlobePage() {
   return (

@@ -3,7 +3,7 @@ import { Location } from "./../../generated/prisma/index.d";
 
 import { newTripFormSchema } from "@/lib/validations/validations";
 import prisma from "../prisma";
-import { createClient } from "@/utils/supabase/server";
+// import { createClient } from "@/utils/supabase/server";
 import { NewLocationData } from "../types/types";
 
 export async function createTrip(data: unknown) {
@@ -111,8 +111,8 @@ export async function reorderLocations(newLocationsOrder: Location[]) {
       prisma.location.update({
         where: { id: loc.id },
         data: { order: loc.order },
-      })
-    )
+      }),
+    ),
   );
 }
 export async function deleteTrip(tripId: string) {
@@ -154,8 +154,8 @@ export async function deleteLocation(locationId: string) {
       prisma.location.update({
         where: { id: loc.id },
         data: { order: index },
-      })
-    )
+      }),
+    ),
   );
 
   return { success: true };

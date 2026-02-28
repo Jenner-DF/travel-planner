@@ -4,6 +4,7 @@ import { Location } from "./../../generated/prisma/index.d";
 import { newTripFormSchema } from "@/lib/validations/validations";
 import prisma from "../prisma";
 // import { createClient } from "@/utils/supabase/server";
+
 import { NewLocationData } from "../types/types";
 
 export async function createTrip(data: unknown) {

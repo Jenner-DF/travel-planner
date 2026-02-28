@@ -1,35 +1,45 @@
 datasource db {
   provider = "postgresql"
   url      = env("DATABASE_URL")
-  schemas  = ["public"]  // <-- do NOT include auth
+}
+
+generator client {
+  provider = "prisma-client-js"
 }
 
 model Trip {
-  id          String      @id @default(uuid())
+  id          String     @id @default(uuid()) @db.Uuid
   title       String
   description String
   imageUrl    String
   startDate   DateTime
   endDate     DateTime
-  userId      String      @db.Uuid  // just store UUID, no @relation
-  locations   Location[]
-  createdAt   DateTime    @default(now())
-  updatedAt   DateTime    @updatedAt
 
-  @@schema("public")
+  // StackAuth user id
+  userId      String     @db.Uuid
+
+  locations   Location[]
+
+  createdAt   DateTime   @default(now())
+  updatedAt   DateTime   @updatedAt
+
+  @@index([userId]) // important for fast queries per user
 }
 
 model Location {
-  id            String   @id @default(uuid())
+  id            String   @id @default(uuid()) @db.Uuid
   locationTitle String
   lat           Float
   long          Float
   address       String
+
   trip          Trip     @relation(fields: [tripId], references: [id], onDelete: Cascade)
-  tripId        String
+  tripId        String   @db.Uuid
+
   order         Int      @default(0)
+
   createdAt     DateTime @default(now())
   updatedAt     DateTime @updatedAt
 
-  @@schema("public")
+  @@index([tripId])
 }

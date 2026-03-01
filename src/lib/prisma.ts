@@ -1,13 +1,14 @@
+import { PrismaClient } from "@prisma/client";
 import { withAccelerate } from "@prisma/extension-accelerate";
-import { PrismaClient } from "@/generated/prisma";
 
-const globalForPrisma = global as unknown as {
-  prisma: PrismaClient;
-};
+declare global {
+  var prisma: PrismaClient | undefined;
+}
 
-const prisma =
-  globalForPrisma.prisma || new PrismaClient().$extends(withAccelerate());
+// create client with extension
+const prismaClient = new PrismaClient().$extends(withAccelerate());
 
-if (process.env.NODE_ENV !== "production") globalForPrisma.prisma = prisma;
+// use global for hot reload
+export const prisma = (global.prisma || prismaClient) as PrismaClient;
 
-export default prisma;
+if (process.env.NODE_ENV !== "production") global.prisma = prisma;

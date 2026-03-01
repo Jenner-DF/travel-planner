@@ -2,11 +2,13 @@
 import TripCard from "@/components/custom/TripCard";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
-import { getUser, getUserTrips } from "@/lib/actions/actions";
+import { getUserTrips } from "@/lib/actions/actions";
 import Link from "next/link";
-import { Plane, MapPin, CalendarDays, Loader2, Trash2 } from "lucide-react";
+import { Plane, MapPin, CalendarDays, MapPinPlus } from "lucide-react";
 import { useQuery } from "@tanstack/react-query";
 import { redirect } from "next/navigation";
+import { useUser } from "@stackframe/stack";
+import { Skeleton } from "@/components/ui/skeleton";
 
 export default function TripsPage() {
   const { data: trips = [], isPending } = useQuery({
@@ -16,17 +18,19 @@ export default function TripsPage() {
       return trips ?? []; // ✅ ensures it never returns null/undefined
     },
   });
-  const { data: user, isPending: isPendingUser } = useQuery({
-    queryKey: ["user"],
-    queryFn: async () => {
-      return await getUser();
-    },
-  });
 
-  if (isPending || isPendingUser) {
-    return <div>Loading your trips...</div>;
+  const user = useUser();
+  // const { data: user, isPending: isPendingUser } = useQuery({
+  //   queryKey: ["user"],
+  //   queryFn: async () => {
+  //     return await getUser();
+  //   },
+  // });
+
+  if (isPending) {
+    return <TripsPageSkeleton />;
   }
-  if (!user) redirect("/login");
+  if (!user) redirect("/handler/login");
 
   if (!trips || trips.length === 0) {
     return (
@@ -45,7 +49,7 @@ export default function TripsPage() {
   }
 
   const upcomingTrips = trips.filter(
-    (t) => new Date(t.startDate) > new Date()
+    (t) => new Date(t.startDate) > new Date(),
   ).length;
 
   return (
@@ -55,8 +59,7 @@ export default function TripsPage() {
         <div className="relative p-8 sm:p-10 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-6">
           <div>
             <h1 className="text-3xl font-bold mb-2 text-neutral-900">
-              Welcome back,{" "}
-              {user.user_metadata.full_name?.split(" ")[0] || "Traveler"}
+              Welcome back, {user.displayName || "Traveler"}
             </h1>
             <p className="text-neutral-600">
               You have <strong>{trips.length}</strong> trip
@@ -70,7 +73,7 @@ export default function TripsPage() {
               variant="outline"
               className="border-neutral-500 text-neutral-900 hover:bg-neutral-900 hover:text-white transition-all"
             >
-              + Add Trip
+              <MapPinPlus /> Add Trip
             </Button>
           </Link>
         </div>
@@ -120,6 +123,51 @@ export default function TripsPage() {
               className="animate-fadeIn border border-neutral-200 rounded-xl hover:shadow-md transition-all"
             >
               <TripCard trip={trip} />
+            </div>
+          ))}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function TripsPageSkeleton() {
+  return (
+    <div className="container mx-auto px-4 py-10 space-y-10 animate-pulse">
+      {/* Header */}
+      <div className="rounded-2xl border border-neutral-200 p-8 space-y-4">
+        <Skeleton className="h-8 w-72" />
+        <Skeleton className="h-5 w-96" />
+        <Skeleton className="h-10 w-40 mt-4" />
+      </div>
+
+      {/* Stats */}
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-6">
+        {Array.from({ length: 3 }).map((_, i) => (
+          <div
+            key={i}
+            className="border border-neutral-200 rounded-xl p-6 space-y-3"
+          >
+            <Skeleton className="h-6 w-6 mx-auto" />
+            <Skeleton className="h-8 w-16 mx-auto" />
+            <Skeleton className="h-4 w-24 mx-auto" />
+          </div>
+        ))}
+      </div>
+
+      {/* Trips Grid */}
+      <div className="space-y-4">
+        <Skeleton className="h-6 w-40" />
+
+        <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
+          {Array.from({ length: 6 }).map((_, i) => (
+            <div
+              key={i}
+              className="border border-neutral-200 rounded-xl p-6 space-y-4"
+            >
+              <Skeleton className="h-40 w-full rounded-lg" />
+              <Skeleton className="h-5 w-3/4" />
+              <Skeleton className="h-4 w-1/2" />
             </div>
           ))}
         </div>

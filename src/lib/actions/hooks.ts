@@ -8,8 +8,8 @@ import {
   deleteTrip,
   reorderLocations,
 } from "./actions";
-import { Location } from "@/generated/prisma";
-import { NewLocationData } from "../types/types";
+import { NewLocationData, TripWithLocations } from "../types/types";
+import type { Location } from "@prisma/client";
 
 export function useDeleteTrip() {
   const queryClient = useQueryClient();
@@ -30,12 +30,29 @@ export function useDeleteLocation(tripId: string) {
 
   return useMutation({
     mutationFn: (locationId: string) => deleteLocation(locationId),
+    onMutate: async (locationId: string) => {
+      await queryClient.cancelQueries({ queryKey: ["trip", tripId] });
+
+      const previousData = queryClient.getQueryData(["trip", tripId]);
+      queryClient.setQueryData(["trip", tripId], (old: TripWithLocations) => {
+        return {
+          ...old,
+          locations: old.locations.filter(
+            (loc: Location) => loc.id !== locationId,
+          ),
+        };
+      });
+      return { previousData };
+    },
     onSuccess: () => {
       toast.success("Location deleted");
-      queryClient.invalidateQueries({ queryKey: ["trip", tripId] });
     },
-    onError: () => {
+    onError: (_err, _vars, context) => {
+      queryClient.setQueryData(["trip", tripId], context?.previousData);
       toast.error("Failed to delete location");
+    },
+    onSettled: () => {
+      queryClient.invalidateQueries({ queryKey: ["trip", tripId] });
     },
   });
 }
@@ -44,17 +61,21 @@ export function useAddLocation(tripId: string) {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: (newLocationData: NewLocationData) =>
-      addTripLocation(newLocationData),
+    mutationFn: async (newLocationData: NewLocationData) => {
+      console.log("BAGONG LOC NGA TO TANGINA  MO", newLocationData);
+      return await addTripLocation(newLocationData);
+    },
+    //dont use optimistic updates when creating new location
     onSuccess: () => {
       toast.success("New Location added successfully!");
-      // ✅ invalidate the trip query so it refetches
-      queryClient.invalidateQueries({
-        queryKey: ["trip", tripId],
-      });
     },
     onError: () => {
       toast.error("Failed to add your new location");
+    },
+    onSettled: () => {
+      queryClient.invalidateQueries({
+        queryKey: ["trip", tripId],
+      });
     },
   });
 }
@@ -65,15 +86,33 @@ export function useReorderLocations(tripId: string) {
   return useMutation({
     mutationFn: (newLocationsOrder: Location[]) =>
       reorderLocations(newLocationsOrder),
-    onSuccess: () => {
-      toast.success("Locations reordered successfully!");
-      // ✅ invalidate the trip query so it refetches
-      queryClient.invalidateQueries({
-        queryKey: ["trip", tripId],
+    //OnMutate runs before finishing the mutation fn, allows optimistic updates!
+    onMutate: async (newLocationsOrder) => {
+      //cancel upcoming  query
+      await queryClient.cancelQueries({ queryKey: ["trip", tripId] });
+      //get old data
+      const previousData = queryClient.getQueryData(["trip", tripId]);
+      //optimistically visual update ui
+      queryClient.setQueryData(["trip", tripId], (old: TripWithLocations) => {
+        //old = cache, if nothing returns immediately
+        if (!old) return old;
+        return {
+          ...old,
+          locations: newLocationsOrder,
+        };
       });
+      //returns if error (context) react query
+      return { previousData };
     },
-    onError: () => {
+    onSuccess: () => {
+      // toast.success("Locations reordered successfully!");
+    },
+    onError: (_err, _vars, context) => {
+      queryClient.setQueryData(["trip", tripId], context?.previousData);
       toast.error("Failed to reorder locations");
+    },
+    onSettled: () => {
+      queryClient.invalidateQueries({ queryKey: ["trip", tripId] });
     },
   });
 }

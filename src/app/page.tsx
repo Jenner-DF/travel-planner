@@ -2,7 +2,7 @@ import { Button } from "@/components/ui/button";
 import { MapIcon, CalendarDays, PlaneTakeoff } from "lucide-react";
 import Link from "next/link";
 
-export default function HomePage() {
+export default async function HomePage() {
   return (
     <div className="container mx-auto px-6 py-20">
       {/* ===== Hero Section ===== */}

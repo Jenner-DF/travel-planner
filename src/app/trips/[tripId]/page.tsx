@@ -1,6 +1,5 @@
 import TripDetails from "@/components/custom/TripDetails";
 import { getUserTripWithLocations } from "@/lib/actions/actions";
-import prisma from "@/lib/prisma";
 import { getQueryClient } from "@/providers/getQueryClient";
 
 export default async function TripPage({
@@ -9,7 +8,7 @@ export default async function TripPage({
   params: Promise<{ tripId: string }>;
 }) {
   const { tripId } = await params;
-  if (!tripId) return <div>Invalid trip</div>;
+  console.log(tripId);
 
   const queryClient = getQueryClient();
   await queryClient.prefetchQuery({
@@ -19,6 +18,7 @@ export default async function TripPage({
 
   return (
     <div>
+      {/* <div>TITE </div> */}
       <TripDetails tripId={tripId} />
     </div>
   );

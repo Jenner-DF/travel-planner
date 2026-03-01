@@ -1,4 +1,4 @@
-import { Location, Trip } from "@/generated/prisma";
+import { Trip, Location } from "@prisma/client";
 
 export interface NominatimLocation {
   place_id: number;

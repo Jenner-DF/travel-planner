@@ -35,7 +35,7 @@ export default function TripDetails({ tripId }: { tripId: string }) {
         Loading trip...
       </div>
     );
-
+  // return <div>{JSON.stringify(trip)}</div>;
   const today = new Date();
   const start = new Date(trip.startDate);
   const end = new Date(trip.endDate);

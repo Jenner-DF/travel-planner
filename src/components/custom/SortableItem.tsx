@@ -1,28 +1,21 @@
 import { Trash2, GripVertical } from "lucide-react";
 import { Button } from "../ui/button";
-import { useMutation, useQueryClient } from "@tanstack/react-query";
-import { toast } from "sonner";
 import { CSS } from "@dnd-kit/utilities";
 import { useSortable } from "@dnd-kit/sortable";
-import { deleteLocation } from "@/lib/actions/actions";
-import { Location } from "@/generated/prisma";
 import { useDeleteLocation } from "@/lib/actions/hooks";
+import { Location } from "@prisma/client";
 
-function SortableItem({ item, tripId }: { item: Location; tripId: string }) {
-  const queryClient = useQueryClient();
-
+function SortableItem({
+  item,
+  tripId,
+  // handleDelete,
+}: {
+  item: Location;
+  tripId: string;
+  // handleDelete: (locationId: Location["id"]) => void;
+}) {
   const { mutate: deleteLocation, isPending: isPendingDelete } =
     useDeleteLocation(tripId);
-  // const deleteMutation = useMutation({
-  //   mutationFn: (id: string) => deleteLocation(id),
-  //   onSuccess: () => {
-  //     toast.success("Location deleted");
-  //     queryClient.invalidateQueries({ queryKey: ["trip", tripId] });
-  //   },
-  //   onError: () => {
-  //     toast.error("Failed to delete location");
-  //   },
-  // });
 
   const { attributes, listeners, setNodeRef, transform, transition } =
     useSortable({ id: item.id });
@@ -31,6 +24,11 @@ function SortableItem({ item, tripId }: { item: Location; tripId: string }) {
     transform: CSS.Transform.toString(transform),
     transition,
   };
+
+  async function handler() {
+    // handleDelete(item.id); //delete locally first, not changing on other tabs as it does not use local
+    deleteLocation(item.id);
+  }
 
   return (
     <div
@@ -59,10 +57,7 @@ function SortableItem({ item, tripId }: { item: Location; tripId: string }) {
         <Button
           size="icon"
           variant="ghost"
-          onClick={() => {
-            console.log("Deleting:", item.id);
-            deleteLocation(item.id);
-          }}
+          onClick={handler}
           disabled={isPendingDelete}
           className="cursor-pointer hover:bg-red-100"
         >

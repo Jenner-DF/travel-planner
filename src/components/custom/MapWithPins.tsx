@@ -1,14 +1,7 @@
 "use client";
 
-import { useState } from "react";
-import {
-  MapContainer,
-  TileLayer,
-  Marker,
-  Popup,
-  useMapEvents,
-} from "react-leaflet";
-import type { Location, Location as TripLocation } from "@/generated/prisma";
+import { MapContainer, TileLayer, Marker, Popup } from "react-leaflet";
+import type { Location } from "@prisma/client";
 import "leaflet/dist/leaflet.css";
 import L from "leaflet";
 

@@ -1,5 +1,5 @@
 "use client";
-
+//big component, divide by form ,map  = tinamad
 import { useForm } from "react-hook-form";
 import { Card, CardContent, CardHeader } from "../ui/card";
 import { newLocationFormSchema } from "@/lib/validations/validations";
@@ -13,20 +13,19 @@ import dynamic from "next/dynamic";
 import { useEffect, useState } from "react";
 import { NewLocationData, NominatimLocation } from "@/lib/types/types";
 import { toast } from "sonner";
-import { redirect } from "next/navigation";
 import { Textarea } from "../ui/textarea";
 import { useAddLocation } from "@/lib/actions/hooks";
+import { useRouter } from "next/navigation";
 
 const TestMap = dynamic(() => import("@/components/custom/TestMap"), {
-  ssr: false, // 👈 VERY IMPORTANT
+  ssr: false, // VERY IMPORTANT
 });
 
 export default function NewLocationClient({ tripid }: { tripid: string }) {
   const [location, setLocation] = useState<NominatimLocation | null>(null);
-  // const [address, setAddress] = useState<string | null>(null);
+  const router = useRouter();
   const [loading, setLoading] = useState(false);
-  const { mutate: addLocation, isPending: isPendingAddLocation } =
-    useAddLocation(tripid);
+  const { mutateAsync: addLocation } = useAddLocation(tripid);
   console.log(location);
   const form = useForm<z.infer<typeof newLocationFormSchema>>({
     resolver: zodResolver(newLocationFormSchema),
@@ -44,7 +43,7 @@ export default function NewLocationClient({ tripid }: { tripid: string }) {
   }, [location, form]);
 
   const handleSubmit = async (
-    formData: z.infer<typeof newLocationFormSchema>
+    formData: z.infer<typeof newLocationFormSchema>,
   ) => {
     setLoading(true);
 
@@ -63,10 +62,11 @@ export default function NewLocationClient({ tripid }: { tripid: string }) {
         address: formData.address,
         coords: [parseFloat(location.lat), parseFloat(location.lon)] as [
           number,
-          number
+          number,
         ],
       };
-      addLocation(newLocationData);
+      await addLocation(newLocationData);
+      router.push(`/trips/${tripid}`);
 
       toast.success("Location added successfully!");
     } catch (error) {
@@ -75,7 +75,6 @@ export default function NewLocationClient({ tripid }: { tripid: string }) {
     } finally {
       setLoading(false); // ✅ always runs even if error or early return
     }
-    redirect(`/trips/${tripid}`);
   };
 
   const handleSearchMap = async () => {

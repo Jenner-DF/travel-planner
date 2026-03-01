@@ -1,6 +1,6 @@
 "use client";
 
-import { Trip } from "@/generated/prisma";
+import { Trip } from "@prisma/client";
 import Image from "next/image";
 import Link from "next/link";
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";

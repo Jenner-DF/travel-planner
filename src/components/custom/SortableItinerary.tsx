@@ -1,4 +1,4 @@
-import { Location } from "@/generated/prisma";
+"use client";
 import { closestCenter, DndContext, DragEndEvent } from "@dnd-kit/core";
 import {
   arrayMove,
@@ -14,6 +14,7 @@ import { toast } from "sonner";
 import { useDeleteLocation, useReorderLocations } from "@/lib/actions/hooks";
 import { Button } from "../ui/button";
 import SortableItem from "./SortableItem";
+import { Location } from "@prisma/client";
 
 export default function SortableItinerary({
   locations,
@@ -23,24 +24,33 @@ export default function SortableItinerary({
   tripId: string;
 }) {
   const id = useId();
-  // const [localLocation, setLocalLocation] = useState(locations);
-  const { mutate: reorderLocations, isPending: isPendingReorder } =
-    useReorderLocations(tripId);
+  // // ✅ local state to reflect immediate UI changes
+  // const [localLocations, setLocalLocations] = useState(locations);
 
-  const handleDragEnd = async (event: DragEndEvent) => {
+  const { mutate: reorderLocations } = useReorderLocations(tripId);
+
+  const handleDragEnd = (event: DragEndEvent) => {
     const { active, over } = event;
+    if (!over || active.id === over.id) return;
 
-    if (active.id !== over?.id) {
-      const oldIndex = locations.findIndex((item) => item.id === active.id);
-      const newIndex = locations.findIndex((item) => item.id === over?.id);
-      const newLocationsOrder = arrayMove(locations, oldIndex, newIndex).map(
-        (item, index) => ({ ...item, order: index })
-      );
-      // setLocalLocation(newLocationsOrder);
-      console.log("New Locations Order: ", newLocationsOrder);
-      reorderLocations(newLocationsOrder);
-    }
+    const oldIndex = locations.findIndex((item) => item.id === active.id);
+    const newIndex = locations.findIndex((item) => item.id === over.id);
+
+    // ✅ new order for UI
+    const newOrder = arrayMove(locations, oldIndex, newIndex).map(
+      (item, index) => ({ ...item, order: index }),
+    );
+
+    // ✅ update UI immediately
+    // setLocalLocations(newOrder);
+
+    // ✅ send new order to server
+    reorderLocations(newOrder); //optimistic
   };
+  // const handleDelete = (locationId: string) => {
+  //   setLocalLocations((prev) => prev.filter((loc) => loc.id !== locationId));
+  //   queryClient.invalidateQueries({ queryKey: ["trip", tripId], exact: true });
+  // };
   return (
     <DndContext
       id={id}
@@ -53,16 +63,15 @@ export default function SortableItinerary({
       >
         <div className="space-y-4">
           {locations.map((loc, i) => (
-            <SortableItem key={loc.id} item={loc} tripId={tripId} />
+            <SortableItem
+              key={loc.id}
+              item={loc}
+              tripId={tripId}
+              // handleDelete={(locationId) => handleDelete(locationId)}
+            />
           ))}
         </div>
       </SortableContext>
     </DndContext>
-
-    // <div>
-    //   {locations.map((loc) => (
-    //     <div key={loc.id}>{loc.locationTitle}</div>
-    //   ))}
-    // </div>
   );
 }

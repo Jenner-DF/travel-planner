@@ -7,25 +7,27 @@ import Link from "next/link";
 import { useRef, useEffect, useMemo, useState } from "react";
 import type { GlobeMethods } from "react-globe.gl";
 import TripSummary from "./TripSummary";
+import { Skeleton } from "../ui/skeleton";
+import GlobeSkeleton from "./GlobeSkeleton";
 
 const Globe = dynamic(() => import("react-globe.gl"), {
   ssr: false,
-  loading: () => <div className="text-center">Loading globe...</div>,
+  loading: () => <Skeleton className="h-[400px] w-[400px] rounded-full" />,
 });
 
 export default function GlobeUi() {
-  const { data: trip } = useQuery({
+  const { data: trip, isLoading } = useQuery({
     queryKey: ["trips"],
     queryFn: () => getUserTrips(),
   });
 
   const [visitedCountries, setVisitedCountries] = useState<Set<string>>(
-    new Set()
+    new Set(),
   );
   const globeRef = useRef<GlobeMethods | undefined>(undefined);
   const locations = useMemo(
     () => trip?.flatMap((t) => t.locations) ?? [],
-    [trip]
+    [trip],
   ); // memoize to avoid changing reference on every render
 
   useEffect(() => {
@@ -73,7 +75,9 @@ export default function GlobeUi() {
 
     return () => clearInterval(interval);
   }, []);
-
+  if (isLoading) {
+    return <GlobeSkeleton />;
+  }
   return (
     <div className="grid grid-cols-1 md:grid-cols-2 gap-10">
       <TripSummary />

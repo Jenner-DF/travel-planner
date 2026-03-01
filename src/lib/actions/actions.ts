@@ -1,113 +1,125 @@
 "use server";
-import { Location } from "./../../generated/prisma/index.d";
 
 import { newTripFormSchema } from "@/lib/validations/validations";
-import prisma from "../prisma";
-// import { createClient } from "@/utils/supabase/server";
-
 import { NewLocationData } from "../types/types";
+import { stackServerApp } from "@/stack/server";
+import { put } from "@vercel/blob";
+import { Location } from "@prisma/client";
+import { prisma } from "@/lib/prisma";
 
+/**
+ * Create a new trip and upload image to Vercel Blob
+ */
 export async function createTrip(data: unknown) {
-  // validate again on server (never trust client input)
+  const user = await stackServerApp.getUser();
+  if (!user) throw new Error("User not authenticated");
+
   const parsed = newTripFormSchema.parse(data);
-  const supabase = await createClient();
-  const user = await supabase.auth.getUser();
 
-  if (user.data.user == null) return null;
-  const userId = user.data.user.id;
-
-  if (!parsed.imageUrl) return;
+  if (!parsed.imageUrl) throw new Error("Image is required");
   const file = parsed.imageUrl as File;
 
-  // Generate unique filename
   const fileExt = file.name.split(".").pop();
   const fileName = `${crypto.randomUUID()}.${fileExt}`;
+  const filePath = `${user.id}/${fileName}`;
 
-  // Upload to: trip-images/{userId}/{fileName}
-  const filePath = `${userId}/${fileName}`;
-  console.log("FILEPATH KO TO!", filePath);
-  const { error } = await supabase.storage
-    .from("trip-images") // bucket name
-    .upload(filePath, file);
+  console.log("Uploading file to:", filePath);
 
-  if (error) throw new Error(`Error uploading image: ${error}`);
-
-  // Get public URL
-  const {
-    data: { publicUrl },
-  } = supabase.storage.from("trip-images").getPublicUrl(filePath);
+  const { url: publicUrl } = await put(`trip-images/${filePath}`, file, {
+    access: "public",
+  });
 
   console.log("Uploaded file URL:", publicUrl);
 
-  // Create trip
   const trip = await prisma.trip.create({
     data: {
       title: parsed.name,
       description: parsed.description,
       startDate: parsed.startDate,
       endDate: parsed.endDate,
-      userId: userId,
+      userId: user.id,
       imageUrl: publicUrl,
     },
   });
-  return trip; // return the created trip for debugging
-}
-export async function getUser() {
-  const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-  return user;
-}
 
-export async function getUserTrips() {
-  const supabase = await createClient();
-  const user = await supabase.auth.getUser();
-  if (user.data.user == null) return null;
-
-  const trips = await prisma.trip.findMany({
-    where: { userId: user.data.user.id },
-    orderBy: { createdAt: "desc" },
-    include: { locations: true },
-  });
-  return trips;
-}
-
-export async function getUserTripWithLocations(tripId: string) {
-  const trip = await prisma.trip.findUnique({
-    where: { id: tripId },
-    include: { locations: true },
-  });
   return trip;
 }
 
+/**
+ * Get current authenticated user
+ */
+export async function getUser() {
+  const user = await stackServerApp.getUser();
+  return user || null;
+}
+
+/**
+ * Get trips for the current authenticated user
+ */
+export async function getUserTrips() {
+  const user = await stackServerApp.getUser();
+  if (!user) return null;
+
+  return await prisma.trip.findMany({
+    where: { userId: user.id },
+    orderBy: { createdAt: "desc" },
+    include: { locations: true },
+  });
+}
+
+/**
+ * Get a specific trip and its locations
+ */
+export async function getUserTripWithLocations(tripId: string) {
+  return await prisma.trip.findUnique({
+    where: { id: tripId },
+    include: { locations: true },
+  });
+}
+export async function isTripOwner(tripId: string, userId: string) {
+  const trip = await prisma.trip.findUnique({
+    where: { id: tripId },
+    select: { userId: true },
+  });
+
+  if (!trip) throw new Error("Trip not found");
+
+  return trip.userId === userId;
+}
+/**
+ * Add a new location to a trip
+ */
 export async function addTripLocation(newLocationData: NewLocationData) {
+  const user = await stackServerApp.getUser();
+  if (!user) throw new Error("User is required");
+
   const { tripId, address, locationTitle, coords } = newLocationData;
-  const supabase = await createClient();
-  const user = await supabase.auth.getUser();
-  if (user.data.user == null) return null;
-  //coords: [lat, lon]
+
+  const owner = await isTripOwner(tripId, user.id);
+  if (!owner) throw new Error("You are not allowed to modify this trip.");
   const countLocations = await prisma.location.count({
     where: { tripId },
   });
-  await prisma.location.create({
+
+  return await prisma.location.create({
     data: {
       locationTitle,
       address,
       lat: coords[0],
       long: coords[1],
-      tripId,
+      trip: { connect: { id: tripId } },
       order: countLocations,
     },
   });
 }
 
+/**
+ * Reorder locations in a trip
+ */
 export async function reorderLocations(newLocationsOrder: Location[]) {
-  const supabase = await createClient();
-  const user = await supabase.auth.getUser();
-  if (user.data.user == null) return null;
-
-  await prisma.$transaction(
+  const user = await stackServerApp.getUser();
+  if (!user) throw new Error("User is required");
+  return await prisma.$transaction(
     newLocationsOrder.map((loc) =>
       prisma.location.update({
         where: { id: loc.id },
@@ -116,40 +128,42 @@ export async function reorderLocations(newLocationsOrder: Location[]) {
     ),
   );
 }
+
+/**
+ * Delete a trip and all its locations
+ */
 export async function deleteTrip(tripId: string) {
-  const supabase = await createClient();
-  const user = await supabase.auth.getUser();
-  if (user.data.user == null) return null;
-  await prisma.trip.delete({
+  const user = await stackServerApp.getUser();
+  if (!user) throw new Error("User is required");
+
+  return await prisma.trip.delete({
     where: { id: tripId },
   });
 }
-export async function deleteLocation(locationId: string) {
-  console.log(`Deleting location with id: ${locationId}`);
-  const supabase = await createClient();
-  const user = await supabase.auth.getUser();
-  if (!user.data.user) return null;
 
-  // 1️⃣ Find the location to know which trip it belongs to
-  const deletedLoc = await prisma.location.findUnique({
+/**
+ * Delete a single location and reorder remaining ones
+ */
+export async function deleteLocation(locationId: string) {
+  const user = await stackServerApp.getUser();
+  if (!user) throw new Error("User is required");
+
+  // Find the location to know which trip it belongs to
+  const loc = await prisma.location.findUnique({
     where: { id: locationId },
     select: { tripId: true },
   });
+  // if (!loc) throw new Error("Cannot find the location in your trip");
 
-  if (!deletedLoc) return null;
+  // Delete the location
+  await prisma.location.delete({ where: { id: locationId } });
 
-  // 2️⃣ Delete that location
-  await prisma.location.delete({
-    where: { id: locationId },
-  });
-
-  // 3️⃣ Fetch remaining locations for that trip, sorted by order
+  // Reorder remaining locations
   const remaining = await prisma.location.findMany({
-    where: { tripId: deletedLoc.tripId },
+    where: { tripId: loc.tripId },
     orderBy: { order: "asc" },
   });
 
-  // 4️⃣ Reassign order values (0, 1, 2, ...)
   await prisma.$transaction(
     remaining.map((loc, index) =>
       prisma.location.update({
@@ -161,13 +175,3 @@ export async function deleteLocation(locationId: string) {
 
   return { success: true };
 }
-
-// export async function getTripSignedUrl(userId: string, fileName: string) {
-//   const supabase = await createClient();
-//   const { data, error } = await supabase.storage
-//     .from("trip-images")
-//     .createSignedUrl(`${userId}/${fileName}`, 60 * 60); // 1 hour
-
-//   if (error) throw error;
-//   return data.signedUrl;
-// }
